@@ -1,0 +1,392 @@
+<title>Moyna Wallet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hind+Siliguri:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single phone-width column (max 420px) centered on larger screens; teal balance header, action grid, offer, recent activity, bottom nav with a raised scan button. */
+:root {
+  --ink: #0d3b3a;          /* deep teal — brand */
+  --ink-2: #155654;
+  --marigold: #f0a23a;     /* accent */
+  --paper: #f3f6f5;        /* teal-biased neutral ground */
+  --surface: #ffffff;
+  --text: #13221f;
+  --muted: #5d706c;
+  --line: #dde6e3;
+  --tile: #e7f0ee;
+  --on-ink: #f4fbf9;
+  --good: #1f8a5b;
+  --bad: #c2463d;
+  --stage: #dfe7e5;
+
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Hind Siliguri", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ink: #0b2f2e; --ink-2: #124644; --marigold: #f3b057;
+    --paper: #0f1716; --surface: #172221; --text: #e6efed; --muted: #92a6a2;
+    --line: #253432; --tile: #1e2e2c; --on-ink: #eaf6f3; --good: #4cc08a; --bad: #ec7a70; --stage: #0a1110;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #0b2f2e; --ink-2: #124644; --marigold: #f3b057;
+  --paper: #0f1716; --surface: #172221; --text: #e6efed; --muted: #92a6a2;
+  --line: #253432; --tile: #1e2e2c; --on-ink: #eaf6f3; --good: #4cc08a; --bad: #ec7a70; --stage: #0a1110;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: var(--stage);
+  color: var(--text);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.45;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ink); }
+
+.app {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+@media (min-width: 480px) {
+  body { padding-block: 24px; }
+  .app { min-height: 820px; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 80px -30px rgb(0 0 0 / .35); }
+}
+
+.pad { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--marigold); outline-offset: 2px; border-radius: 8px; }
+svg { display: block; }
+
+/* ---------- Header ---------- */
+.head {
+  background: var(--ink);
+  color: var(--on-ink);
+  padding-block: 18px 72px;
+  position: relative;
+}
+.head::after { /* jamdani-like diamond motif */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .07;
+  background-image: linear-gradient(45deg, currentColor 25%, transparent 25%, transparent 75%, currentColor 75%),
+                    linear-gradient(45deg, currentColor 25%, transparent 25%, transparent 75%, currentColor 75%);
+  background-size: 22px 22px; background-position: 0 0, 11px 11px;
+  -webkit-mask-image: linear-gradient(200deg, #000 0%, transparent 60%); mask-image: linear-gradient(200deg, #000 0%, transparent 60%);
+}
+.topbar { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--marigold); color: var(--ink);
+  display: grid; place-items: center;
+  font-family: var(--f-display); font-weight: 800; font-size: 17px;
+  flex: none;
+}
+.hello { flex: 1; min-width: 0; }
+.hello small { display: block; font-size: 13px; opacity: .75; }
+.hello strong { font-family: var(--f-display); font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgb(255 255 255 / .1);
+  position: relative;
+}
+.icon-btn .dot { position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--marigold); box-shadow: 0 0 0 2px var(--ink); }
+
+.balance-row { margin-top: 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 1; }
+.tap-balance {
+  height: 40px; padding: 0 6px 0 6px; border-radius: 999px;
+  background: var(--surface); color: var(--ink);
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 14px;
+  min-width: 190px; overflow: hidden; position: relative;
+}
+.tap-balance .coin {
+  width: 28px; height: 28px; border-radius: 50%; flex: none;
+  background: var(--ink); color: var(--marigold);
+  display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 15px;
+  transition: transform .55s cubic-bezier(.6,.05,.3,1);
+}
+.tap-balance .label { padding-right: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tap-balance.shown .coin { transform: translateX(var(--slide, 150px)) rotate(360deg); }
+.tap-balance.shown .label { transform: translateX(-30px); }
+.tap-balance .label { transition: transform .55s cubic-bezier(.6,.05,.3,1); }
+.tap-balance .amt { font-family: var(--f-display); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+.pts { text-align: right; font-size: 12px; line-height: 1.3; }
+.pts b { display: block; font-family: var(--f-display); font-size: 16px; color: var(--marigold); font-variant-numeric: tabular-nums; }
+
+/* ---------- Actions card ---------- */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px -18px rgb(13 59 58 / .45);
+}
+.actions { margin-top: -52px; position: relative; z-index: 2; padding: 18px 10px 10px; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 4px; }
+.act { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 6px 2px 10px; border-radius: 14px; text-align: center; }
+.act:hover { background: var(--tile); }
+.act .ic {
+  width: 48px; height: 48px; border-radius: 15px;
+  background: var(--tile); color: var(--ink-2);
+  display: grid; place-items: center;
+}
+.act .t { font-size: 12.5px; font-weight: 500; line-height: 1.2; }
+.act .bn { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .act .ic { color: var(--marigold); } }
+:root[data-theme="dark"] .act .ic { color: var(--marigold); }
+
+/* ---------- Sections ---------- */
+main { display: flex; flex-direction: column; gap: 22px; padding-block: 0 110px; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.sec-h h2 { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+.sec-h a, .link { color: var(--good); font-size: 13px; font-weight: 600; text-decoration: none; }
+
+.offer {
+  display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+  background: var(--marigold); color: #2a1c05;
+  border-radius: 20px; padding: 16px 18px;
+  position: relative; overflow: hidden;
+}
+.offer .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+.offer h3 { margin: 2px 0 4px; font-family: var(--f-display); font-weight: 800; font-size: 21px; line-height: 1.1; letter-spacing: -.02em; text-wrap: balance; }
+.offer p { margin: 0; font-size: 13px; }
+.offer .pct {
+  font-family: var(--f-display); font-weight: 800; font-size: 44px; line-height: 1; letter-spacing: -.04em;
+  color: #0d3b3a;
+}
+.offer .pct sup { font-size: 18px; }
+
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding: 2px 4px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+.chip i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 12px; color: #fff; font-family: var(--f-display); }
+.chip span small { display: block; color: var(--muted); font-size: 11px; line-height: 1.1; }
+
+.list { padding: 4px 16px; }
+.tx { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding-block: 12px; }
+.tx + .tx { border-top: 1px solid var(--line); }
+.tx .ti { width: 40px; height: 40px; border-radius: 12px; background: var(--tile); color: var(--ink-2); display: grid; place-items: center; }
+.tx .nm { font-weight: 600; font-size: 14px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx .meta { font-size: 12px; color: var(--muted); }
+.tx .amt { text-align: right; font-family: var(--f-display); font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.tx .amt small { display: block; font-family: var(--f-body); font-weight: 400; font-size: 11px; color: var(--muted); }
+.in { color: var(--good); }
+.out { color: var(--text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tx .ti { color: var(--marigold); } }
+:root[data-theme="dark"] .tx .ti { color: var(--marigold); }
+
+.limit { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.limit .row { display: flex; justify-content: space-between; font-size: 13px; }
+.limit .row b { font-family: var(--f-display); font-variant-numeric: tabular-nums; }
+.bar { height: 8px; border-radius: 99px; background: var(--tile); overflow: hidden; }
+.bar span { display: block; height: 100%; width: 34%; background: var(--ink-2); border-radius: inherit; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bar span { background: var(--marigold); } }
+:root[data-theme="dark"] .bar span { background: var(--marigold); }
+
+/* ---------- Bottom nav ---------- */
+.nav {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
+  width: 100%; max-width: 420px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
+  padding: 8px max(8px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  z-index: 5;
+}
+@media (min-width: 480px) { .nav { position: absolute; } }
+.nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); padding-top: 4px; }
+.nav button[aria-current="page"] { color: var(--text); font-weight: 600; }
+.nav button[aria-current="page"] svg { color: var(--ink-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .nav button[aria-current="page"] svg { color: var(--marigold); } }
+:root[data-theme="dark"] .nav button[aria-current="page"] svg { color: var(--marigold); }
+.scan .ring {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: var(--ink); color: var(--marigold);
+  display: grid; place-items: center;
+  margin-top: -34px;
+  box-shadow: 0 0 0 5px var(--surface), 0 10px 20px -8px rgb(13 59 58 / .6);
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 20px);
+  background: var(--text); color: var(--paper);
+  padding: 10px 16px; border-radius: 12px; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: .25s; z-index: 20; max-width: 340px;
+}
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+@media (max-width: 360px) { .act .bn { display: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12h13M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 18h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-add" viewBox="0 0 24 24"><path d="M12 20V8M7 13l5-5 5 5M5 4h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bill" viewBox="0 0 24 24"><path d="M13 2 5 13h6l-1 9 8-11h-6l1-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 11a7 6 0 0 1 14-1h2v4h-2a7 7 0 0 1-3 3v3h-3v-2h-3v2H6v-3.5A6 6 0 0 1 4 11Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="14.5" cy="10" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="18" cy="6" r="2" fill="currentColor"/><circle cx="6" cy="18" r="2" fill="currentColor"/><circle cx="18" cy="18" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M12 9v11M12 9S10 4 7.5 5.5 9 9 12 9Zm0 0s2-5 4.5-3.5S15 9 12 9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-in" viewBox="0 0 24 24"><path d="M17 7 7 17M7 9v8h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <header class="head pad">
+    <div class="topbar">
+      <div class="avatar" aria-hidden="true">RA</div>
+      <div class="hello">
+        <small>শুভ সকাল · Good morning</small>
+        <strong>Rafiq Ahmed</strong>
+      </div>
+      <button class="icon-btn" id="btn-bell" aria-label="Notifications, 3 unread">
+        <svg width="20" height="20"><use href="#i-bell"/></svg><span class="dot"></span>
+      </button>
+    </div>
+
+    <div class="balance-row">
+      <button class="tap-balance" id="btn-balance" aria-live="polite">
+        <span class="coin" aria-hidden="true">৳</span>
+        <span class="label" id="bal-label">Tap for balance</span>
+      </button>
+      <div class="pts">Moyna Points<b>1,240</b></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="pad" aria-label="Services">
+      <div class="card actions">
+        <div class="grid">
+          <button class="act" data-name="Send Money"><span class="ic"><svg width="22" height="22"><use href="#i-send"/></svg></span><span class="t">Send Money<span class="bn">সেন্ড মানি</span></span></button>
+          <button class="act" data-name="Cash Out"><span class="ic"><svg width="22" height="22"><use href="#i-cash"/></svg></span><span class="t">Cash Out<span class="bn">ক্যাশ আউট</span></span></button>
+          <button class="act" data-name="Mobile Recharge"><span class="ic"><svg width="22" height="22"><use href="#i-phone"/></svg></span><span class="t">Recharge<span class="bn">রিচার্জ</span></span></button>
+          <button class="act" data-name="Payment"><span class="ic"><svg width="22" height="22"><use href="#i-bag"/></svg></span><span class="t">Payment<span class="bn">পেমেন্ট</span></span></button>
+          <button class="act" data-name="Add Money"><span class="ic"><svg width="22" height="22"><use href="#i-add"/></svg></span><span class="t">Add Money<span class="bn">অ্যাড মানি</span></span></button>
+          <button class="act" data-name="Pay Bill"><span class="ic"><svg width="22" height="22"><use href="#i-bill"/></svg></span><span class="t">Pay Bill<span class="bn">পে বিল</span></span></button>
+          <button class="act" data-name="Savings"><span class="ic"><svg width="22" height="22"><use href="#i-save"/></svg></span><span class="t">Savings<span class="bn">সঞ্চয়</span></span></button>
+          <button class="act" data-name="More services"><span class="ic"><svg width="22" height="22"><use href="#i-more"/></svg></span><span class="t">More<span class="bn">আরও</span></span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pad" aria-label="Offer">
+      <div class="offer">
+        <div>
+          <div class="eyebrow">Recharge offer · ends 30 Nov</div>
+          <h3>Cashback on your next top-up</h3>
+          <p>Recharge ৳50 or more on any operator. Up to ৳30 back.</p>
+        </div>
+        <div class="pct">10<sup>%</sup></div>
+      </div>
+    </section>
+
+    <section class="pad" aria-labelledby="h-fav">
+      <div class="sec-h"><h2 id="h-fav">Send again</h2><a href="#" class="link" id="lnk-contacts">All contacts</a></div>
+      <div class="chips">
+        <button class="chip" data-name="Send Money to Ammu"><i style="background:#b5543a">AM</i><span>Ammu<small>017••• 4521</small></span></button>
+        <button class="chip" data-name="Send Money to Tanvir"><i style="background:#3a6fb5">TV</i><span>Tanvir<small>019••• 8830</small></span></button>
+        <button class="chip" data-name="Send Money to Nusrat"><i style="background:#7a4fa8">NS</i><span>Nusrat<small>018••• 2207</small></span></button>
+        <button class="chip" data-name="Send Money to Karim Store"><i style="background:#2e8a63">KS</i><span>Karim Store<small>Merchant</small></span></button>
+      </div>
+    </section>
+
+    <section class="pad" aria-labelledby="h-tx">
+      <div class="sec-h"><h2 id="h-tx">Recent activity</h2><a href="#" class="link" id="lnk-statement">Statement</a></div>
+      <div class="card list">
+        <div class="tx">
+          <span class="ti"><svg width="20" height="20"><use href="#i-in"/></svg></span>
+          <div><div class="nm">Received from Tanvir</div><div class="meta">Today, 9:12 AM · TrxID 9KQ4M2XL7</div></div>
+          <div class="amt in">+৳2,500<small>Fee ৳0.00</small></div>
+        </div>
+        <div class="tx">
+          <span class="ti"><svg width="20" height="20"><use href="#i-phone"/></svg></span>
+          <div><div class="nm">Recharge · 017••• 6612</div><div class="meta">Yesterday, 8:40 PM · Prepaid</div></div>
+          <div class="amt out">−৳100<small>Cashback ৳10</small></div>
+        </div>
+        <div class="tx">
+          <span class="ti"><svg width="20" height="20"><use href="#i-cash"/></svg></span>
+          <div><div class="nm">Cash Out · Agent 01843</div><div class="meta">15 Nov, 6:05 PM · Mirpur 10</div></div>
+          <div class="amt out">−৳3,000<small>Fee ৳55.50</small></div>
+        </div>
+        <div class="tx">
+          <span class="ti"><svg width="20" height="20"><use href="#i-bill"/></svg></span>
+          <div><div class="nm">DESCO electricity bill</div><div class="meta">14 Nov, 11:20 AM · Acc 4410••92</div></div>
+          <div class="amt out">−৳1,842<small>Fee ৳0.00</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pad" aria-labelledby="h-lim">
+      <div class="sec-h"><h2 id="h-lim">Monthly limit</h2><span class="meta" style="font-size:12px;color:var(--muted)">Send Money</span></div>
+      <div class="card limit">
+        <div class="row"><span>Used <b>৳68,000</b></span><span>of <b>৳2,00,000</b></span></div>
+        <div class="bar" role="progressbar" aria-valuenow="34" aria-valuemin="0" aria-valuemax="100" aria-label="34% of monthly send money limit used"><span></span></div>
+        <div class="row" style="color:var(--muted);font-size:12px"><span>Free Send Money left this month</span><span>৳18,500</span></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="Main">
+    <button aria-current="page" id="nav-home"><svg width="22" height="22"><use href="#i-home"/></svg>Home</button>
+    <button id="nav-tx" data-name="Transactions"><svg width="22" height="22"><use href="#i-list"/></svg>History</button>
+    <button class="scan" id="nav-scan" data-name="Scan QR"><span class="ring"><svg width="26" height="26"><use href="#i-scan"/></svg></span>Scan QR</button>
+    <button id="nav-offers" data-name="Offers"><svg width="22" height="22"><use href="#i-gift"/></svg>Offers</button>
+    <button id="nav-me" data-name="Profile"><svg width="22" height="22"><use href="#i-user"/></svg>Profile</button>
+  </nav>
+
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<script>
+(() => {
+  const btn = document.getElementById('btn-balance');
+  const label = document.getElementById('bal-label');
+  const coin = btn.querySelector('.coin');
+  let timer;
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('shown')) return;
+    label.innerHTML = '<span class="amt">৳12,480.50</span>';
+    btn.style.setProperty('--slide', (btn.clientWidth - coin.offsetWidth - 12) + 'px');
+    btn.classList.add('shown');
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      btn.classList.remove('shown');
+      label.textContent = 'Tap for balance';
+    }, 4000);
+  });
+
+  const toast = document.getElementById('toast');
+  let tt;
+  const say = msg => {
+    toast.textContent = msg;
+    toast.classList.add('on');
+    clearTimeout(tt);
+    tt = setTimeout(() => toast.classList.remove('on'), 1800);
+  };
+  document.querySelectorAll('[data-name]').forEach(el =>
+    el.addEventListener('click', () => say(el.dataset.name + ' opens here in the full app')));
+  document.getElementById('btn-bell').addEventListener('click', () => say('3 new notifications'));
+  ['lnk-contacts', 'lnk-statement'].forEach(id =>
+    document.getElementById(id).addEventListener('click', e => { e.preventDefault(); say('Opens in the full app'); }));
+})();
+</script>
